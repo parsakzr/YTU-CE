@@ -1,0 +1,1 @@
+myss		SEGMENT PARA STACK 'sta'

@@ -1,0 +1,6 @@
+
+; PRINTCHAR	MACRO
+;			MOVE AH, 02H
+;			INT 21H
+;			ENDM
+; ?
