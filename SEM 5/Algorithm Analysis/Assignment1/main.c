@@ -1,15 +1,16 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
-#include <float.h>
-#include <SDL2/SDL.h>
 
-// Point + Properties ....BEGIN................................................
-typedef struct Point{ // Struct Point : Contains (int)coordinates 
-    int x, y;
-} Point; // typedef (struct Point) ---> Point
 
-Point newPoint(int x_val, int y_val){ // SET : Constructor of Point()
+// MACROS
+#define MAXNUM 128 // Maximum number of points
+
+// Point + Properties .........................................................
+typedef struct Point{
+    int x, y; // A Point's Coordinates
+} Point;
+
+Point newPoint(int x_val, int y_val){ // Constructor of Point()
     Point* this;
     this = malloc(sizeof(Point));
     this->x = x_val;
@@ -17,16 +18,17 @@ Point newPoint(int x_val, int y_val){ // SET : Constructor of Point()
     return *this;
 }
 
-void printPoint(Point this){ // GET : Prints a point in proper format
-    printf("( %d, %d )\n", this.x, this.y); 
+void printPoint(Point this){ // Prints a point in a proper format
+    printf("P(%d, %d)\n", this.x, this.y); 
 }
 
 // Utilities ..................................................................
-float distance(Point p1, Point p2){ // Eucledean Distance
-    // Calculates the distance between 2 points
+float distance_sq(Point p1, Point p2){ // Eucledean Distance
+    // Calculates the squered distance between 2 points
+    // Since d1^2 > d2^2 ==> d1 > d2 we don't need to compare the
     int dx = p2.x - p1.x;
     int dy = p2.y - p1.y;
-    return sqrt(dx*dx + dy*dy);
+    return dx*dx + dy*dy;
 }
 
 int compareX (const void * a, const void * b){ // qsort() by x
@@ -43,11 +45,20 @@ int compareY (const void * a, const void * b){ // qsort() by y
     return ( p1->y - p2->y );
 }
 
-float bruteforce(Point points[], int n){
-    float dist, min_dist = FLT_MAX; //  FLT_MAX ~ infinity
+float min(float f1, float f2){
+    if (f1 > f2)
+        return f2;
+    return f1;
+}
+
+// BruteForce Approach  .......................................................
+// Used when n<=3
+float bruteforce(Point *points, int n, Point *p1, Point *p2){
+    float dist,
+          min_dist = distance_sq(points[0], points[1]);
     for (int i = 0; i < n; i++)
         for (int j = i+1; j < n; j++){
-            dist = distance(points[i], points[j]);
+            dist = distance_sq(points[i], points[j]);
             if (dist < min_dist)
                 min_dist = dist;   
         }
@@ -55,146 +66,106 @@ float bruteforce(Point points[], int n){
     return min_dist;
 }
 
-float min(float f1, float f2){
-    if (f1 > f2)
-        return f2;
-    return f1;
-}
-
 
 // ClosestPair() ..............................................................
-float ClosestPair_stripe(Point strip[], int n, float d) {
+float ClosestPair_stripe(Point *stripe, int n, float d, Point *p1, Point *p2) {
     // minimum distance of the points in a d sized stripe
-    qsort(strip, n, sizeof(Point), compareY);
+    qsort(stripe, n, sizeof(Point), compareY); // sort by Y
     float min = d;
     for (int i = 0; i < n; ++i)
-        for (int j = i+1; j < n && (strip[j].y - strip[i].y) < min; ++j)
-            if (distance(strip[i],strip[j]) < min)
-                min = distance(strip[i], strip[j]);
+        for (int j = i+1; j < n && (stripe[j].y - stripe[i].y) < min; ++j)
+            if (distance_sq(stripe[i],stripe[j]) < min){
+                min = distance_sq(stripe[i], stripe[j]);
+                p1 = &stripe[i];
+                p2 = &stripe[j];
+            }
+    
     return min;
 }
 
-float closestPair_DC(Point points[], int n) { 
+
+float closestPair(Point points[], int n, Point *p1, Point *p2) {
+    //find the closest pair in a set of points
+
+     // Sort the points relative to x
+    qsort(points, n, sizeof(Point), compareX);
+
+    // Main Algorithm, Divide and Conquer
+
     // Base of recursion; maximum 6 steps ( O(1) )
     // for n=2 n=3 it's just better to bruteforce
     if (n <= 3) 
-        return bruteforce(points, n); 
+        return bruteforce(points, n, p1, p2); 
   
     // middle point 
-    int mid = n/2; 
-    Point pmid = points[mid]; 
+    int mid = n/2; // the index
+    Point pmid = points[mid]; // the middle point
     
     // Find dl and dr
-    float dl = closestPair_DC(points, mid); // min distance of left side
-    float dr = closestPair_DC(points + mid, n-mid);  // ~ of right side
+    float dl = closestPair(points, mid, p1, p2); // min distance of left side
+    float dr = closestPair(points + mid, n-mid, p1, p2);  // ~ of right side
   
     float d = min(dl, dr); // best of dl and dr
   
     // Build strip[] for points near the dividor (closer than d)  
-    Point strip[n]; 
+    Point *strip;
+    strip = (Point*) malloc (sizeof(Point) * n); // DList of n points
+    if (points == NULL){
+        fprintf(stderr, "[!] ERROR : Couldn't Allocate Memory!\n");
+        exit(EXIT_FAILURE);
+    }
+
+    // Add the close points to the strip list
     int n_stripe = 0; 
     for (int i = 0; i < n; i++) 
         if (abs(points[i].x - pmid.x) < d) 
             strip[n_stripe++] = points[i]; 
   
     // Find the closest points in strip.  Return the minimum of d and closest
-    // distance is strip[]
+    float dmin = min(d, ClosestPair_stripe(strip, n_stripe, d, p1, p2));
 
-    return min(d, ClosestPair_stripe(strip, n_stripe, d) ); 
-} 
+    free(strip); // memory management in a recursive call
 
-float closestPair(Point points[], int n) {
-    // the main function that is be called
-    //find distance of closest pair in a set of points
-    qsort(points, n, sizeof(Point), compareX);
-
-    return closestPair_DC(points, n);
+    return dmin;
 }
 
-// SDL ........................................................................
-void draw_SDL(double data1[],double data2[], int n){
-
-    // Init SDL2 + handle errors
-    if(SDL_Init(SDL_INIT_VIDEO) != 0) {
-        fprintf(stderr, "Could not init SDL: %s\n", SDL_GetError());
-        return;
-    }
-    // Init screen and renderer + handle errors
-    SDL_Window* window = NULL;
-    SDL_Renderer* renderer = NULL;
-    const int WINDOW_WIDTH  = 800;
-    const int WINDOW_HEIGHT = 600;
-    SDL_CreateWindowAndRenderer(WINDOW_WIDTH, WINDOW_HEIGHT, 0, &window, &renderer);
-    if(!window || !renderer) {
-        fprintf(stderr, "Could not create window/renderer: %s\n", SDL_GetError());
-        return;
-    }
-
-    // Start the drawing;
-    // clear the renderer
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
-    SDL_RenderClear(renderer);
-    
-    SDL_SetRenderDrawColor(renderer, 0, 0, 255, SDL_ALPHA_OPAQUE);
-    SDL_RenderDrawLine(renderer, 10, WINDOW_HEIGHT - 10, WINDOW_WIDTH - 10, WINDOW_HEIGHT - 10);
-    SDL_RenderDrawLine(renderer, 10, 10, 10, WINDOW_HEIGHT - 10);
-
-    // Draw points[] 
-    SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
-    for (int i = 0; i < n; i++){
-        SDL_RenderDrawPoint(renderer, i+10, WINDOW_HEIGHT - data1[i] - 10);
-        SDL_RenderDrawPoint(renderer, i+10, WINDOW_HEIGHT - data2[i] - 10);
-    }
-
-    // Draw the line 
-    //SDL_SetRenderDrawColor(renderer, 255, 0, 0, SDL_ALPHA_OPAQUE);
-    //SDL_RenderDrawLine(renderer, WINDOW_WIDTH/2, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT);
-
-    // Apply everything on window
-    SDL_RenderPresent(renderer);
-
-    // Quit process //
-    printf("(Enter any key to close SDL)\n");
-    getchar();
-
-    fprintf(stderr, "Exiting SDL\n");
-    SDL_DestroyRenderer(renderer);
-    SDL_DestroyWindow(window);
-    SDL_Quit();
-}
 // main() .....................................................................
 int main(){
-    srand(time(NULL));
-    Point points[2000];
-    int num = 2000;
-    clock_t t_start, t_end;
-    double data_DC[500]; /// runtime in miliseconds
-    double data_BF[500]; 
+    Point *points;
+    points = (Point*) malloc (sizeof(Point) * MAXNUM); // Dynamic points[MAXSIZE]
 
-    // generate test cases
-    for (int i = 0; i < num; i++){
-        points[i] = newPoint(rand()%100, rand()%100); // not important at all
+    if (points == NULL){
+        fprintf(stderr, "[!] ERROR : Couldn't Allocate Memory!\n");
+        exit(EXIT_FAILURE);
+    }
+    
+    char* filename = "sample.txt";
+
+    FILE *fin = fopen(filename, "r");
+    if (fin == NULL){
+        fprintf(stderr, "[!] ERROR : Couldn't read the file '%s'!\n", filename);
+        exit(EXIT_FAILURE);
+    }
+
+    int i=0;
+    while (fscanf(fin, "%d%d", &points[i].x , &points[i].y) == 2)
+        i++;
+
+    int numOfPoints = i;
+
+    printf("Num of Points = %d\nPoints:\n", numOfPoints);
+    for (i = 0; i < numOfPoints; i++){
+        printPoint(points[i]);
     }
     
 
-    for (int indx = 1; indx*4 < num; indx++){
-        
-        t_start = clock();
-        closestPair(points, indx*4);
-        t_end = clock();
-        data_DC[indx] = (double)(t_end - t_start) / CLOCKS_PER_SEC * 100000;
+    Point *p1, *p2; // The Close pair
+    printf("Distance^2 = %f\n", closestPair(points, numOfPoints, p1, p2));
+    printPoint(*p1);
+    printPoint(*p2);
 
-        t_start = clock();
-        bruteforce(points, indx*4);
-        t_end = clock();
-        data_BF[indx] = (double)(t_end - t_start) / CLOCKS_PER_SEC * 100000;
 
-    for (int indx = 0; indx < 500; indx++){
-        printf("DC -> %d : %.3f \n",indx, data_DC[indx]);
-        printf("BF -> %d : %.3f \n",indx, data_BF[indx]);
-        printf("------\n");
-    }
-    draw_SDL(data_DC, data_BF, 500);
+    free(points);
     
     return 0;
 }
