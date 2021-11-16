@@ -4,11 +4,11 @@ Bu algorıtma, verilen bir nokta kümesindeki en yakın noktaları ve uzaklığ�
 
 ---
 ## İçerik Tablosu
-- [**Yöntem**](##Yöntem)
+- [**Yöntem**](#Yöntem)
   - [**Closest Pair Problem ( Divide and Conquer)**](#closest-pair-problem--divide-and-conquer)
   - [**Time Complexity**](#time-complexity)
-    - [**İspat**](###İspat)
-- [**Uygulama**](##Uygulama)
+    - [**İspat**](#İspat)
+- [**Uygulama**](#Uygulama)
 
 ---
 
