@@ -88,7 +88,7 @@ ve O(n) karmaşıklığinde dS'i hesaplayabiliriz.
 
 ```c
 typedef struct Point{
-    int x, y;
+    int x, y; kartezyen koordinatlari
 } Point;
 ```
 
@@ -117,75 +117,115 @@ int compareY (const void * a, const void * b){ // qsort() by y
 }
 ```
 
-Brutefoce Algoritması:
+### Brutefoce :
 
 ```c
-float bruteforce(Point points[], int n){
-    float dist, min_dist = FLT_MAX; //  FLT_MAX ~ infinity
+float bruteforce(Point *points, int n, Point *p1, Point *p2){
+    float dist;
+    float min_dist = distance_sq(points[0], points[1]);
+    p1 = &points[0];
+    p2 = &points[1];
+
     for (int i = 0; i < n; i++)
         for (int j = i+1; j < n; j++){
-            dist = distance(points[i], points[j]);
-            if (dist < min_dist)
+            dist = distance_sq(points[i], points[j]);
+            if (dist < min_dist){
                 min_dist = dist;
+                p1 = &points[i];
+                p2 = &points[j];
+            }  
         }
+
     return min_dist;
 }
+
 ```
 
-Divide And Conquer Algoritması:
+### Closest Pair (D&C) Algoritması:
 
 ```c
-float closestPair(Point points[], int n) {
+float closestPair(Point points[], int n, Point *p1, Point *p2) {
+    //find the closest pair in a set of points
+
+     // Sort the points relative to x
     qsort(points, n, sizeof(Point), compareX);
-    return closestPair_DC(points, n);
-}
-```
 
-```c
-float closestPair_DC(Point points[], int n) {
+    // Main Algorithm, Divide and Conquer
+
     // Base of recursion; maximum 6 steps ( O(1) )
-    // for n=2 n=3 it's just better to bruteforce
-    if (n <= 3)
-        return bruteforce(points, n);
-
-    // middle point
-    int mid = n/2;
-    Point pmid = points[mid];
-
-    // Find dl and dr
-    float dl = closestPair_DC(points, mid); // min distance of left side
-    float dr = closestPair_DC(points + mid, n-mid);  // ~ of right side
+    // for n=2 or n=3 bruteforce is needed
+    if (n <= 3) 
+        return bruteforce(points, n, p1, p2); 
   
-    float d = min(dl, dr); // best of dl and dr
+    // Median point 
+    int mid = n/2; // the index
+    Point pmid = points[mid]; // the middle point
+    
+    // Find dl and dr
+    Point *pr1, *pr2; // to not overwrite the p1 p2 value on dr (second call)
+    float dl = closestPair(points, mid, p1, p2); // min distance of left side
+    float dr = closestPair(points+mid, n-mid, pr1, pr2);  // ~ of right side
+  
+    // d = min(dl, dr)
+    float d = dl; // didn't use the min() function because of p1 and p2 
+    if(dr<dl){
+        d = dr;
+        p1 = pr1;
+        p2 = pr2;
+    }
   
     // Build strip[] for points near the dividor (closer than d)  
-    Point strip[n];
-    int n_stripe = 0;
-    for (int i = 0; i < n; i++)
-        if (abs(points[i].x - pmid.x) < d)
-            strip[n_stripe++] = points[i];
-  
-    // Find the closest points in strip.  Return the minimum of d and closest
-    // distance is strip[]
+    Point *stripe;
+    stripe = (Point*) malloc (sizeof(Point) * n); // DList of n points
+    if (points == NULL){
+        fprintf(stderr, "[!] ERROR : Couldn't Allocate Memory!\n");
+        exit(EXIT_FAILURE);
+    }
 
-    return min(d, ClosestPair_stripe(strip, n_stripe, d) );
+    // Add the close points to the stripe list
+    int n_stripe = 0; 
+    for (int i = 0; i < n; i++) 
+        if (abs(points[i].x - pmid.x) < d) 
+            stripe[n_stripe++] = points[i]; 
+  
+    // Find the closest points in strip.
+    Point *ps1, *ps2;
+    float ds = ClosestPair_stripe(stripe, n_stripe, d, ps1, ps2);
+
+    // result = minimum of d and ds, also handle p1, p2
+    float dmin = d;
+    if (ds<d){
+        dmin = ds;
+        p1 = ps1;
+        p2 = ps2;
+    }
+
+
+    free(stripe); // memory management in a recursive call
+
+    return dmin;
 }
 ```
 
 ```c
-float ClosestPair_stripe(Point strip[], int n, float d) {
+float ClosestPair_stripe(Point *stripe, int n, float d, Point *p1, Point *p2) {
     // minimum distance of the points in a d sized stripe
-    qsort(strip, n, sizeof(Point), compareY);
+    qsort(stripe, n, sizeof(Point), compareY); // sort by Y
     float min = d;
     for (int i = 0; i < n; ++i)
-        for (int j = i+1; j < n && (strip[j].y - strip[i].y) < min; ++j)
-            if (distance(strip[i],strip[j]) < min)
-                min = distance(strip[i], strip[j]);
+        for (int j = i+1; j < n && (stripe[j].y - stripe[i].y) < min; ++j)
+            if (distance_sq(stripe[i],stripe[j]) < min){
+                min = distance_sq(stripe[i], stripe[j]);
+                p1 = &stripe[i];
+                p2 = &stripe[j];
+            }
+    
     return min;
 }
 ```
 
 ---
 Links:
-* [Youtube video'su](https://youtu.be/Cz8f8MacyXs)
-* [Github](https://github.com/parsakzr/YTU)
+* [Referans](https://people.csail.mit.edu/indyk/6.838-old/handouts/lec17.pdf)
+* [Çektiğim Youtube video'su](https://youtu.be/Cz8f8MacyXs)
+* [Github](https://github.com/parsakzr/YTU-CE/tree/master/SEM5/AlgorithmAnalysis/Assignment1)
