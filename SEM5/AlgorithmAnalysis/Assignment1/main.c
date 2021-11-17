@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-
+#include <math.h>
 
 // MACROS
 #define MAXNUM 128 // Maximum number of points
@@ -96,6 +96,11 @@ float closestPair(Point points[], int n, Point *p1, Point *p2) {
      // Sort the points relative to x
     qsort(points, n, sizeof(Point), compareX);
 
+    printf("------------\n");
+    printf("Runs on these points:\n");
+    for (int i = 0; i < n; i++){
+        printPoint(points[i]);
+    }
     // Main Algorithm, Divide and Conquer
 
     // Base of recursion; maximum 6 steps ( O(1) )
@@ -145,8 +150,7 @@ float closestPair(Point points[], int n, Point *p1, Point *p2) {
         p1 = ps1;
         p2 = ps2;
     }
-
-
+    
     free(stripe); // memory management in a recursive call
 
     return dmin;
@@ -181,10 +185,10 @@ int main(){
         printPoint(points[i]);
     }
     
-
+    // The Closest points
     Point *p1=&points[0],
-          *p2=&points[1]; // The Closest points
-    printf("Distance^2 = %f\n", closestPair(points, numOfPoints, p1, p2));
+          *p2=&points[1];
+    printf("Distance = %f\n", sqrt(closestPair(points, numOfPoints, p1, p2)));
 
     // #TODO Debug for not changing the values
     // printf("The Closest Pair is between:\n");
