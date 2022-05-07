@@ -1,6 +1,11 @@
 # **Closest Pair of Points**
 
-Bu algorıtma, verilen bir nokta kümesindeki en yakın noktaları ve uzaklığıni hesaplamaya çalışmaktadır.
+#### **Parsa Kazerooni - 19011915**
+#### Yildiz Teknik Ünversitesi - Algoritma Analizi - Doç. Dr. M. Amaç GÜVENSAN
+#### Ödev 1 - Divide and Conquer Algorithms
+
+<br>
+Bu algoritma, verilen bir nokta kümesindeki en yakın noktaları ve uzaklığıni hesaplamaya çalışmaktadır.
 
 ---
 ## İçerik Tablosu
@@ -88,7 +93,7 @@ ve O(n) karmaşıklığinde dS'i hesaplayabiliriz.
 
 ```c
 typedef struct Point{
-    int x, y; kartezyen koordinatlari
+    int x, y; // kartezyen koordinatlari
 } Point;
 ```
 
