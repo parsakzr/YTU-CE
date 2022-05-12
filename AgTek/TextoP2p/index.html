@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <title>WebRTC Chat</title>
+</head>
+<body>
+    <div id="lobby-page">
+        <div class="InputContainer">
+            <label for="username-input" class="label">Username</label>
+            <input
+                type="text"
+                id="username-input"
+                class="TextInput"
+                placeholder="Enter your Username"
+                autocomplete="off"
+                required
+            />
+            <button id="login-button" type="submit">Login</button>
+        </div>
+    </div>
+
+     <div id="chat-page">
+        <div class="ChatContainer">
+            <div class="ChatBox" id="chat-box">
+                Parsa: Hello World! <br>
+                World: Hi Mom! <br>
+                Parsa: Skrrrt! <br>
+            </div>
+            <div class="ChatInput">
+                <input type="text" id="ChatInput"></div>
+            </div>
+        </div>
+     </div>
+</body>
+<script src="main.js"></script>
+</html>

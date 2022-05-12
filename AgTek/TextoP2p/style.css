@@ -1,0 +1,56 @@
+body {
+    background-color: #1C2023;
+    color: #C7CCD1;
+    font-size: large;
+}
+
+::placeholder{
+    color: #1c20237f;
+}
+
+
+/* ---- Lobby Page ---- */
+#lobby-page {
+    display: flex;
+    width: 360px;
+    padding: 8% 0 0;
+    margin: 3rem;
+}
+
+button {
+    color: #1C2023;
+    background-color: #95AEC7;
+    font-size: medium;
+    padding: 8px;
+    border: none;
+    border-radius: 5px;
+}
+
+button:active {
+    background-color: #738da7;
+}
+
+.TextInput {
+    background-color: #323A3E;
+    color: #1C2023;
+    
+    padding: 8px;
+    border: none;
+    border-radius: 5px;
+}
+
+
+/* ---- Chat Page ---- */
+
+.ChatContainer{
+    display: block;
+}
+
+.ChatBox{
+    padding: 1rem;
+    margin-bottom: 3rem;
+    width: 32rem;
+    background-color: #323A3E;
+    color: #C7CCD1;
+}
+

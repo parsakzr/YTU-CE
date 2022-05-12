@@ -48,6 +48,8 @@ const createOffer = async () => {
     let offer = await peerConnection.createOffer();
     await peerConnection.setLocalDescription(offer);
 
+    peerConnection.addTrack()
+
     console.log('offer:', offer);
 }
 
