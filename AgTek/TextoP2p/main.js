@@ -71,7 +71,7 @@ loginBtn.addEventListener("click", function () {
         chatBox.append("You joined as ", username);
         send({
          type: "login",
-         name: username
+         room: username
       });
    }
 
