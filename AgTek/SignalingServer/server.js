@@ -76,7 +76,8 @@ wss.on('connection', function(socket) {
                sendTo(socket, { 
                   type: "login", 
                   success: true,
-                  action: "join"
+                  action: "join",
+                  room: data.room,
                }); 
             } else { 
                // --> signal to create() room
@@ -102,7 +103,7 @@ wss.on('connection', function(socket) {
                //setting that UserA connected with UserB 
                sendTo(otherConn, { 
                   type: "offer", 
-                  body: data.body, 
+                  sdp: data.sdp, 
                   // name: socket.name 
                }); 
             }
