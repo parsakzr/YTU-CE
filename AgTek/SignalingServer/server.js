@@ -77,7 +77,6 @@ wss.on('connection', function(socket) {
                   type: "login", 
                   success: true,
                   action: "join",
-                  room: data.room,
                }); 
             } else { 
                // --> signal to create() room
