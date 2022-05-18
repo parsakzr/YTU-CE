@@ -4,8 +4,6 @@ import "./App.css";
 
 const ws = new WebSocket("ws://localhost:9090");
 
-var room; // current room name, accessed via window.room
-
 const config = {
   iceServers: [
     {
@@ -22,6 +20,9 @@ const peerConnection = new RTCPeerConnection(config, {
   optional: [{ RtpDataChannels: true }],
 });
 
+var room; // current room name, accessed via window.room
+var dataChannel;
+
 ws.onopen = () => {
   console.log("Connected to signalling server");
 };
@@ -30,17 +31,18 @@ ws.onmessage = async (event) => {
   console.log(event.data); // #LOG
   const data = JSON.parse(event.data);
 
+  console.log(data); // #LOG
+
   switch (data.type) {
     // handle actions for each data type
     case "login":
-      let dataChannel = peerConnection.createDataChannel("message", {
+      window.dataChannel = peerConnection.createDataChannel("messageChannel", {
         reliable: true,
       });
       console.log("Got login");
       if (data.action == "join") {
         let offer = peerConnection.createOffer().then((offer) => {
           peerConnection.setLocalDescription(offer).then(() => {
-            console.log("room is:", window.room); // #LOG
             ws.send(
               JSON.stringify({ type: "offer", room: data.room, sdp: offer.sdp })
             );
@@ -51,29 +53,33 @@ ws.onmessage = async (event) => {
 
     case "offer":
       console.log("Got offer. Sending answer to peer.");
-      await peerConnection.setRemoteDescription(
-        new RTCSessionDescription({
-          type: data.type,
-          sdp: data.sdp,
-          room: window.room,
-        })
-      );
+      await peerConnection.setRemoteDescription({
+        type: "offer",
+        sdp: data.sdp,
+      });
+
       let answer = await peerConnection.createAnswer();
+
+      console.log("ON OFFER: \nanswer: \n", answer);
+      console.log("data: \n", data); // #LOG
+
       await peerConnection.setLocalDescription(answer);
 
-      await ws.send(
-        JSON.stringify({ type: "answer", sdp: answer.sdp, room: window.room })
-      );
+      await ws.send(JSON.stringify({ type: "answer", sdp: answer.sdp }));
       break;
 
     case "answer":
       console.log("Got answer");
-      peerConnection.setRemoteDescription(new RTCSessionDescription(data));
+      // peerConnection.setRemoteDescription(
+      //   new RTCSessionDescription({ type: "answer", sdp: data.sdp })
+      // ); // Serialized, so no need to new RTCSessionDescription()
+      peerConnection.setRemoteDescription(data);
+
       break;
 
     case "candidate":
       console.log("Got ICE candidate");
-      peerConnection.addIceCandidate(new RTCIceCandidate(data));
+      peerConnection.addIceCandidate(new RTCIceCandidate({ data }));
       break;
 
     default:
@@ -92,14 +98,35 @@ function App() {
     e.preventDefault();
     window.room = name; // #GLOBAL VAR
     ws.send(JSON.stringify({ type: "login", room: name }));
+
     setIsLobby(false);
   };
 
   const handleSend = (e) => {
     e.preventDefault();
+
     console.log("Sending message", message);
+    // peerConnection.send();
+
+    console.log("peerconnection state:", peerConnection.signalingState);
+    console.log("datachannel state:", window.dataChannel.readyState);
+
+    // window.dataChannel.send(message);
+
+    // reset message and message-box
     setMessage("");
-    peerConnection.send();
+    document.getElementById("message-box").value = "";
+  };
+
+  const handleMessage = (e) => {
+    //when we receive a message from the other peer, display it on the screen
+    window.dataChannel.onmessage = (event) => {
+      chatArea.innerHTML += event.data + "<br />";
+    };
+
+    window.dataChannel.onclose = () => {
+      console.log("data channel is closed");
+    };
   };
   return (
     <div className="App">
@@ -125,15 +152,15 @@ function App() {
       {isLobby == false && (
         <div className="Chat">
           <h1 className="header font-bold ">Chat</h1>
+          <h2 className="h-32 w-64 bg-slate-400">{window.room}</h2>
           <div className="flex flex-col">
-            <div className="h-32 w-64 bg-slate-400">Hello world!</div>
             <form onSubmit={handleSend}>
               <input
                 type="text"
-                id="message"
+                id="message-box"
                 placeholder="Enter message"
                 onChange={(e) => setMessage(e.target.value)}
-                className="border border-gray-400 rounded-lg py-2 px-4 block w-full"
+                className="border border-gray-400 rounded-lg py-2 px-4 block w-1/3"
               />
               <button
                 type="submit"

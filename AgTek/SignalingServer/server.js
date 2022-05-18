@@ -1,5 +1,6 @@
 //require our websocket library
-var WebSocketServer = require("ws").Server;
+var ws = require("ws");
+var WebSocketServer = ws.Server;
 
 //creating a websocket server at port 9090
 var wss = new WebSocketServer({ port: 9090 });
@@ -87,53 +88,57 @@ wss.on("connection", function (socket) {
 
         break;
 
-      case "offer":
+      case "offer": // #TODO: merge w/ case "answer"
         //for ex. UserA wants to call UserB
-        console.log("Sending offer to join: ", data.room);
+        if (socket.room != undefined && rooms[socket.room] != undefined) {
+          console.log("Sending offer to join: ", socket.room);
 
-        //if UserB exists then send him offer details
-        var otherConn =
-          rooms[data.room] != undefined ? rooms[data.room][0] : null;
+          //if UserB exists then send him offer details
+          var otherConn = getOther(socket, rooms[socket.room]);
 
-        if (otherConn != null) {
-          //setting that UserA connected with UserB
-          sendTo(otherConn, {
-            type: "offer",
-            sdp: data.sdp,
-            // name: socket.name
-          });
+          if (otherConn) {
+            //setting that UserA connected with UserB
+            sendTo(otherConn, {
+              type: "offer",
+              sdp: data.sdp,
+            });
+          }
         }
 
         break;
 
       case "answer":
-        console.log("Sending answer to: ", data.room);
-        //for ex. UserB answers UserA
-        var otherConn = getOther(socket, rooms[data.room]);
+        if (socket.room != undefined && rooms[socket.room] != undefined) {
+          console.log("Sending answer to: ", socket.room);
+          //for ex. UserB answers UserA
+          var otherConn = getOther(socket, rooms[socket.room]);
 
-        if (otherConn) {
-          // connection established
+          if (otherConn) {
+            // connection established
 
-          sendTo(otherConn, {
-            type: "answer",
-            body: data.body,
-          });
+            sendTo(otherConn, {
+              type: "answer",
+              sdp: data.sdp,
+            });
+          }
         }
 
         break;
 
-      case "candidate":
+      case "candidate": // #TODO: complete iceCandidate
         // to echo ICE candidates to other peer
-        console.log("Sending candidate to:", data.room);
-        var other = getOther(socket, data.room);
+        if (socket.room != undefined && rooms[socket.room] != undefined) {
+          console.log("Sending candidate to:", socket.room);
 
-        if (other != null) {
-          sendTo(other, {
-            type: "candidate",
-            body: data.body,
-          });
+          var otherConn = getOther(socket, rooms[socket.room]);
+
+          if (otherConn) {
+            sendTo(otherConn, {
+              type: "candidate",
+              candidate: data.candidate,
+            });
+          }
         }
-
         break;
 
       case "leave":
@@ -198,11 +203,9 @@ wss.on("connection", function (socket) {
 // alias to send stringified json to socket
 function sendTo(socket, message) {
   // #TODO research why
-  try {
+  if (socket.readyState == ws.OPEN) {
     socket.send(JSON.stringify(message));
-  } catch (error) {
-    console.log(error);
-  }
+  } else console.log("ERR: Socket not open to send, message:", message);
 }
 
 function createRoom(socket, roomName) {
@@ -214,7 +217,7 @@ function createRoom(socket, roomName) {
 }
 
 function joinRoom(socket, roomName) {
-  socket.roomName = roomName; // socket holds room name needed .on('close')
+  socket.room = roomName; // socket holds room name needed .on('close')
   var otherConn = rooms[roomName] != undefined ? rooms[roomName][0] : null;
 
   if (otherConn != null) {
