@@ -1,35 +1,7 @@
-//require our websocket library
 var ws = require("ws");
 var WebSocketServer = ws.Server;
 
-//creating a websocket server at port 9090
 var wss = new WebSocketServer({ port: 9090 });
-
-//all rooms currently available in the lobby
-// #TODO: room architecture:
-
-// var room = getRoom()
-// if(socket === room[0]){
-// other = room[1];
-// send(other, {
-//    ...
-// })
-//
-
-// rooms = {
-//    "room1": [
-//       'wdjd-ewrewr-erwr': // WebSocket Connections
-//       'rewr-rewrer-erew':
-//    ],
-//    "room2": [
-//          p1,
-//          p2
-//    ],
-//  }
-
-// offer():
-// P2 sends P1 json;
-// p2.otherPeer = p1
 
 var rooms = {};
 
@@ -56,18 +28,14 @@ wss.on("connection", function (socket) {
 
         //if the given room exists
         if (rooms[data.room]) {
-          // if two peers are connected and third one wants to join
-          // --> reject the third peer
-
           if (rooms[data.room].length == 2) {
             sendTo(socket, {
               type: "login",
               success: false,
-              action: "reject", // #TODO: @Security potential bypass
+              action: "reject",
             });
           } else {
             // room is not full and peer can join
-            // --> join() room
             joinRoom(socket, data.room);
             sendTo(socket, {
               type: "login",
@@ -85,17 +53,11 @@ wss.on("connection", function (socket) {
             action: "create",
           });
         }
-
         break;
-
-      case "offer": // #TODO: merge w/ case "answer"
-        //for ex. UserA wants to call UserB
+      case "offer":
         if (socket.room != undefined && rooms[socket.room] != undefined) {
           console.log("Sending offer to join: ", socket.room);
-
-          //if UserB exists then send him offer details
           var otherConn = getOther(socket, rooms[socket.room]);
-
           if (otherConn) {
             //setting that UserA connected with UserB
             sendTo(otherConn, {
@@ -104,9 +66,7 @@ wss.on("connection", function (socket) {
             });
           }
         }
-
         break;
-
       case "answer":
         if (socket.room != undefined && rooms[socket.room] != undefined) {
           console.log("Sending answer to: ", socket.room);
@@ -114,24 +74,18 @@ wss.on("connection", function (socket) {
           var otherConn = getOther(socket, rooms[socket.room]);
 
           if (otherConn) {
-            // connection established
-
             sendTo(otherConn, {
               type: "answer",
               sdp: data.sdp,
             });
           }
         }
-
         break;
-
-      case "candidate": // #TODO: complete iceCandidate
+      case "candidate":
         // to echo ICE candidates to other peer
         if (socket.room != undefined && rooms[socket.room] != undefined) {
           console.log("Sending candidate to:", socket.room);
-
           var otherConn = getOther(socket, rooms[socket.room]);
-
           if (otherConn) {
             sendTo(otherConn, {
               type: "candidate",
@@ -140,15 +94,10 @@ wss.on("connection", function (socket) {
           }
         }
         break;
-
       case "leave":
-        //leave room
-        // data: {"type":"leave"}
         if (rooms[socket.room]) {
           console.log("Disconnecting from", socket.room);
-
           var otherConn = getOther(socket, rooms[socket.room]);
-
           if (otherConn) {
             // signal the other user so he can disconnect his peer connection
             sendTo(otherConn, {
@@ -157,16 +106,15 @@ wss.on("connection", function (socket) {
           }
           // only one person in room
           delete rooms[socket.room]; // remove room
+          delete socket.room;
+          delete socket.indx;
         }
-
         break;
-
       default:
         sendTo(socket, {
           type: "error",
           body: "Command not found: " + data.type,
         });
-
         break;
     }
   });
@@ -179,27 +127,21 @@ wss.on("connection", function (socket) {
     if (socket.room) {
       // if user was connected to a room
       console.log("Disconnecting from ", socket.room);
-
-      let room = rooms[socket.room];
-
-      if (room) {
-        if (room.length == 2) {
-          let other = getOther(socket, room);
-          // notify the other user to disconnect from peer
-          sendTo(room, {
-            type: "leave",
-          });
-        }
+      if (rooms[socket.room] && room.length == 2) {
+        let otherConn = getOther(socket, rooms[socket.room]);
+        // notify the other user to disconnect from peer
+        sendTo(otherConn, {
+          type: "leave",
+        });
       }
       // remove room
       delete rooms[socket.room];
+      delete socket.room;
+      delete socket.indx;
     }
   });
-
-  // socket.send("Hello world");
 });
 
-// Utility functions .........................
 // alias to send stringified json to socket
 function sendTo(socket, message) {
   // #TODO research why
@@ -219,11 +161,9 @@ function createRoom(socket, roomName) {
 function joinRoom(socket, roomName) {
   socket.room = roomName; // socket holds room name needed .on('close')
   var otherConn = rooms[roomName] != undefined ? rooms[roomName][0] : null;
-
   if (otherConn != null) {
     rooms[roomName].push(socket);
-    socket.indx = 1; // index = 1 joinee.
-
+    socket.indx = 1; // index = 1 joiner.
     console.log("Joined room:", roomName);
   }
 }
