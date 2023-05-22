@@ -5,21 +5,21 @@ import random
 
 
 class Individual:
-    def __init__(self, chromosome) -> None:
+    def __init__(self, chromosome, genes) -> None:
         self.chromosome = chromosome
+        self.genes = genes
         self.fitness = self.calculate_fitness()
 
     @classmethod
-    def mutated_genes(self, genes):
+    def mutated_genes(self):
         # create random genes for mutation
-        gene = random.choice(genes)
+        gene = random.choice(self.genes)
         return gene
 
     @classmethod
-    def create_genome(self, target):
+    def create_genome(self, size):
         # create chromosome or string of genes
-        genome_len = len(target)
-        return [self.mutated_genes() for _ in range(genome_len)]
+        return [self.mutated_genes() for _ in range(size)]
 
     def mate(self, otherParent):
         # perform mating and produce new offspring
@@ -32,7 +32,7 @@ class Individual:
                 child_chromosome.append(gp2)
             else:
                 child_chromosome.append(self.mutated_genes())
-        return Individual(child_chromosome)
+        return Individual(child_chromosome, self.genes)
 
     def calculate_fitness(self):
         # calculate fittness score, it is the number of characters
@@ -61,8 +61,8 @@ class GeneticAlgorithm:
         # create initial population
         population = []
         for _ in range(self.population_size):
-            genome = Individual.create_genome()
-            population.append(Individual(genome))
+            genome = Individual.create_genome(len(self.target))
+            population.append(Individual(genome, self.genes))
 
         while not found:
             # sort the population in increasing order of fitness score
@@ -105,7 +105,7 @@ class GeneticAlgorithm:
             population[0].fitness))
 
 
-if __name__ == '__main':
+if __name__ == '__main__':
     # Target string to be generated
     TARGET = "Hello World"
 
