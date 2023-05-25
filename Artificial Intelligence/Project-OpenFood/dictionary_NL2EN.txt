@@ -1,0 +1,20 @@
+name:name
+score:score
+Energie:Energy
+Vet:Fat
+waarvan verzadigd:Saturated Fat
+waarvan onverzadigd:Unsaturated Fat
+Koolhydraten:Carbohydrates
+waarvan suikers:Suger
+Voedingsvezel:Fiber
+Eiwitten:Protein
+Zout:Salt
+Omega 3 Vetzuren:Omega3
+Alfa-Linoleenzuur:Alpha-Linolenic Acid
+Eicosapentaeenzuur:Eicosapentaenoic Acid
+Docosahexaeenzuur:Docosahexaenoic Acid
+Vitamine C:Vitamin C
+Vitamine D:Vitamin D
+Calcium:Calcium
+Vitamine B2 / Riboflavine:Vitamin B2
+Vitamine B6 / Pyridoxine:Vitamin B6

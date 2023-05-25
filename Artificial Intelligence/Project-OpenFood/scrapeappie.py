@@ -1,17 +1,24 @@
+from time import sleep
 from bs4 import BeautifulSoup
 import requests
+from multiprocessing.dummy import Pool as ThreadPool
+import logging
 import csv
 
-BASE_URL = 'https://www.ah.nl/producten/product/'
 
+THREADPOOL_SIZE = 10
+URL_FILENAME = 'product_url_filtered.txt'
+dictionary = {}
 product_list = []
+
 
 def get_product_info(url):
     '''
     Get Nutrients table from product page
     '''
+    print(f'Fetching product info from {url}')
     try:
-        response = requests.get(url)
+        response = requests.get(url, timeout=5)
         soup = BeautifulSoup(response.text, 'html.parser')
         # print(soup.prettify())
 
@@ -37,9 +44,9 @@ def get_product_info(url):
             # Get Nutrients table data
             for row in nutr_table_rows:
                 td_list = row.findChildren('td')
-                row_header = td_list[0].text
+                row_header = translate(td_list[0].text)
                 row_value = td_list[1].text
-                if(row_header == 'Energie'): # Example value: '107 kJ (25 kcal)'
+                if(row_header == 'Energy'): # Example value: '107 kJ (25 kcal)'
                     # filter only the kcal number
                     row_value = float(row_value.split()[2].replace('(', ''))
                 else: # Nutrient values per 100g, Example value: '1.2 g'
@@ -58,8 +65,43 @@ def get_product_info(url):
         product_list.append(product)
 
     except Exception as e:
-        print(f'[E] Error fetching {url} : {e}')
+        print(f'[E] Error fetching product : {e}')
+
+
+def getAll_product_info_threaded(urls):
+    # Threaded implementation for get_product_info
+    pool = ThreadPool(THREADPOOL_SIZE)
+    pool.map(get_product_info, urls) # each thread appends the product info to product_list[]
+    pool.close()
+    pool.join()
+
+
+def getAll_product_info(urls):
+    # Non-threaded implementation for get_product_info
+    for i, url in enumerate(urls):
+        print(f'---- {i}/{len(urls)} ----')
+        get_product_info(url)
+        sleep(1)
+        # print(f'{product_list=}')
+
+
+def initDictionary(filepath):
+    with open(filepath, 'r') as dictfile:
+        rows = dictfile.readlines()
+        for row in rows:
+            word_nl, word_en = row.split(":")
+            dictionary[word_nl] = word_en.strip()
     
+
+def translate(word):
+    if (dictionary[word] is None):
+        return word
+    return dictionary[word]
+
+def translate_header(header_keys):
+    translated_keys = [dictionary[word] if dictionary[word] is not None else word for word in header_keys]
+    return translated_keys
+
 
 def write_csv(filename, product_list):
     # Get all possible keys from all products
@@ -75,11 +117,15 @@ def write_csv(filename, product_list):
         writer.writerows(product_list)
 
 
+
 if __name__ == '__main__':
-    with open('product_urls.txt', 'r') as f:
+
+    initDictionary('dictionary_NL2EN.txt')
+
+    with open(URL_FILENAME, 'r') as f:
         urls = f.readlines()
-        for url in urls:
-            get_product_info(url.strip())
+
+    getAll_product_info(urls)    
 
     print(f'{product_list=}')
-    write_csv('data/ah.csv', product_list)
+    write_csv('data/ah-test-3.csv', product_list)
