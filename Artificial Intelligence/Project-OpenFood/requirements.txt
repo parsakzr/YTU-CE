@@ -1,0 +1,10 @@
+beautifulsoup4
+Requests
+jupyter
+notebook
+numpy
+pandas
+matplotlib
+seaborn
+scikit-learn
+scipy
